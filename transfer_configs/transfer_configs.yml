@@ -1,0 +1,8 @@
+- hosts: bp2node
+  become: true
+  roles:
+  - bp2node
+- hosts: relay21node
+  become: true
+  roles:
+  - relay21node

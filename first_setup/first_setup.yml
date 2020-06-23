@@ -1,0 +1,20 @@
+- hosts: all
+  become: true
+  roles:
+  - common
+- hosts: relay21node, bp2node
+  become: true
+  roles:
+  - build_cardano_project
+- hosts: bp2node
+  become: true
+  roles:
+  - bp2node
+- hosts: relay21node
+  become: true
+  roles:
+  - relay21node
+- hosts: servicenode
+  become: true
+  roles:
+  - servicenode

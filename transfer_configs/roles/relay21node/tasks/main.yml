@@ -1,0 +1,17 @@
+- name: "Updating Cardano-node Git Repo"
+  become: true
+  command: "{{ item }} chdir={{ home_dir }}/cardano-node"
+  with_items:
+  - git pull origin master
+  - git fetch --all --tags
+  - "git checkout tags/{{ cardano_tag_version }}"
+- name: "transferring {{ node_alias }} configs and services"
+  become: true
+  copy:
+   src: "{{ item.src }}"
+   dest: "{{ item.dest }}"
+   mode: "{{item.mode}}"
+  with_items:
+  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
+  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
+  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}

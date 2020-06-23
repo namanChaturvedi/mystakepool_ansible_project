@@ -1,0 +1,4 @@
+node_alias: relay
+cardano_tag_version: "{{ lookup('env','CARDANO_TAG_VERSION') }}"
+cardano_node_version: "{{ lookup('env','CARDANO_NODE_VERSION') }}"
+home_dir: "{{ lookup('env','HOME_DIR') }}"

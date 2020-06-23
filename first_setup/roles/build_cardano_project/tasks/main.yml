@@ -1,0 +1,58 @@
+- name: "setting up env for Cardano Build"
+  shell: "{{ item }}"
+  with_items:
+  - "cd {{ home_dir }}"
+  - apt-get install build-essential pkg-config libffi-dev libgmp-dev libssl-dev libtinfo-dev libsystemd-dev zlib1g-dev make g++ tmux git jq wget libncursesw5 -y
+  - wget https://downloads.haskell.org/~cabal/cabal-install-3.2.0.0/cabal-install-3.2.0.0-x86_64-unknown-linux.tar.xz
+  - tar -xf cabal-install-3.2.0.0-x86_64-unknown-linux.tar.xz
+  - rm cabal-install-3.2.0.0-x86_64-unknown-linux.tar.xz cabal.sig
+  - mv cabal ~/.local/bin/
+  - ~/.local/bin/cabal update
+  - "mkdir {{ home_dir }}/git_key"
+- name: "copy git access keys"
+  copy:
+   src: git_remote_access
+   dest: "{{ home_dir }}/git_key"
+   mode: 0400
+- name: "download ghc"
+  command: "wget https://downloads.haskell.org/~ghc/8.6.5/ghc-8.6.5-x86_64-deb9-linux.tar.xz chdir={{ home_dir }}"
+- name: "unpack GHC"
+  command: "tar -xf ghc-8.6.5-x86_64-deb9-linux.tar.xz chdir={{ home_dir }}"
+- name: "remove unwanted repos"
+  command: "rm ghc-8.6.5-x86_64-deb9-linux.tar.xz chdir={{ home_dir }}"
+- name: "configure ghc installer"
+  command: "./configure chdir={{ home_dir }}/ghc-8.6.5"
+- name: "install ghc"
+  command: "sudo make install chdir={{ home_dir }}/ghc-8.6.5"
+- name: "Installing Cardano source code"
+  git:
+   repo: https://github.com/input-output-hk/cardano-node.git
+   version: master
+   dest: "{{ home_dir }}/cardano-node"
+- name: "Git fetch all tags"
+  command: "git fetch --all --tags chdir={{ home_dir }}/cardano-node"
+- name: "Git checkout version"
+  command: "git checkout tags/{{ cardano_tag_version }} chdir={{ home_dir }}/cardano-node"
+#- name: "Build cardano-node"
+#  become: true
+#  command: "~/.local/bin/cabal build all chdir={{ home_dir }}/cardano-node"
+#  throttle: 1
+#  async: 2700
+#  poll: 1500
+#  register: build_cmd_sleeper
+#- name: 'cardano build task - check on async task'
+#  async_status:
+#   jid: "{{ build_cmd_sleeper.ansible_job_id }}"
+#  register: job_result
+#  until: job_result.finished
+#  retries: 10
+#- name: "Copy build make files to PATH folder"
+#  become: true
+#  shell:
+#   cmd: "{{ item }}"
+#   chdir: "{{ home_dir }}/cardano-node"
+#   args:
+#    warn: no
+#  with_items:
+#  - "cp -p dist-newstyle/build/x86_64-linux/ghc-8.6.5/cardano-node-{{ cardano_node_version }}/x/cardano-node/build/cardano-node/cardano-node ~/.local/bin"
+#  - "cp -p dist-newstyle/build/x86_64-linux/ghc-8.6.5/cardano-cli-{{ cardano_node_version }}/x/cardano-cli/build/cardano-cli/cardano-cli ~/.local/bin"

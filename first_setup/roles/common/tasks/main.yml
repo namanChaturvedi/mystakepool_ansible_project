@@ -1,0 +1,97 @@
+- name: "Creating a user"
+  user:
+   name: "{{ ubuntu_common_deploy_user_name  }}"
+   password: '$6$S1AWgAedE7hOL$Ooq0M9pYYy/bJqwFxjhb26eckyFnZ85Cbcj.43cKJ8KGcYrZ90VVvQdqPVUoyy39rmXB3whaT5LzabKudGhaK/'
+   groups: sudo
+   state: present
+   shell: /bin/bash
+   system: no
+   createhome: yes
+   home: '/home/{{ ubuntu_common_deploy_user_name }}'
+- name: "Chown HOME directory"
+  shell:
+   cmd: chown {{ ubuntu_common_deploy_user_name }}:{{ ubuntu_common_deploy_user_name }} /home/{{ ubuntu_common_deploy_user_name }} -R
+- name: "Update sudoer file"
+  lineinfile:
+   state: present
+   dest: "/etc/sudoers"
+   line: '{{ ubuntu_common_deploy_user_name }} ALL=(ALL:ALL) ALL'
+- name: "copy pub key to new user"
+  shell:
+   cmd: rsync --archive --chown={{ ubuntu_common_deploy_user_name }}:{{ ubuntu_common_deploy_user_name }} ~/.ssh /home/{{ ubuntu_common_deploy_user_name }}
+- name: "set new user shell to bash"
+  shell:
+   cmd: chsh -s /bin/bash {{ ubuntu_common_deploy_user_name }}
+- name: "Update and upgrade apt packages"
+  become: true
+  apt:
+    upgrade: yes
+    update_cache: yes
+- name: "Installing packages"
+  apt: pkg={{ item }} state=absent
+  with_items:
+  - pkg-config
+  - nload
+  - jq
+  - python3-pip
+- name: "Installing tcpping"
+  shell: "{{ item }}"
+  args:
+   chdir: /usr/bin
+  with_items:
+  - wget http://www.vdberg.org/~richard/tcpping
+- name: Changing perm of "tcpping", adding "755"
+  file: dest=/usr/bin/tcpping mode=755
+- name: "installing ripgrep"
+  shell: "{{ item }}"
+  args:
+   chdir: /root
+  with_items:
+  - curl -LO https://github.com/BurntSushi/ripgrep/releases/download/11.0.2/ripgrep_11.0.2_amd64.deb
+  - dpkg -i ripgrep_11.0.2_amd64.deb
+  - rm -rf ripgrep_11.0.2_amd64.deb
+- name: "update .profile"
+  shell: "{{ item }}"
+  with_items:
+  - touch /home/{{ ubuntu_common_deploy_user_name }}/.profile
+  - chown {{ ubuntu_common_deploy_user_name }} /home/{{ ubuntu_common_deploy_user_name }}/.profile
+  - mkdir -p ~/.local/bin
+- name: "add ~/.local/bin to PATH in bashrc"
+  lineinfile:
+   path: ~/.bashrc
+   line: "{{ item }}"
+  with_items:
+  - export PATH="~/.local/bin:$PATH"
+  - export PATH="~/.cabal/bin:$PATH"
+- name: "Increase Open file limit"
+  lineinfile:
+   state: present
+   dest: "/etc/security/limits.conf"
+   line: "{{ item }}"
+  with_items:
+  - "{{ ubuntu_common_deploy_user_name }} soft nofile 800000"
+  - "{{ ubuntu_common_deploy_user_name }} hard nofile 1048576"
+- name: "Install required packages"
+  apt: state=absent pkg={{ item }}
+  with_items: ubuntu_common_required_packages
+- name: "Update APT package cache"
+  apt: update_cache=yes cache_valid_time=3600
+- name: "Upgrade APT to the latest packages"
+  apt: upgrade=safe
+- name: "Adjust APT update intervals"
+  copy: src=apt_periodic dest=/etc/apt/apt.conf.d/10periodic
+- name: "Set up Postfix to relay mail"
+  debconf: 
+   name=postfix
+   question='{{ item.question }}'
+   value='{{ item.value }}'
+   vtype='{{ item.vtype }}'
+  with_items:
+  - { question: 'postfix/mailname', value: '{{ ansible_fqdn }}', vtype: 'string' }
+  - { question: 'postfix/main_mailer_type', value: 'Internet Site', vtype: 'string' }
+- name: "Email log summary daily"
+  lineinfile: 
+   dest=/etc/cron.daily/00logwatch
+   regexp="^/usr/sbin/logwatch"
+   line="/usr/sbin/logwatch --output mail --mailto {{ ubuntu_common_logwatch_email }} --detail high"
+   state=present create=yes

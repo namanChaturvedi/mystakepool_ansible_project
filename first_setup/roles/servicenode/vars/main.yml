@@ -1,0 +1,4 @@
+prometheus_port_default: "{{ lookup('env','PROMETHEUS_PORT') }}"
+grafana_server_port: "{{ lookup('env','GRAFANA_PORT') }}"
+ubuntu_login_ssh_port: "{{ lookup('env','SERVICE_SSH_PORT') }}"
+home_dir: "{{ lookup('env','HOME_DIR') }}"

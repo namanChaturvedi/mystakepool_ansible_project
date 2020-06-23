@@ -1,0 +1,130 @@
+- name: "Installing and configuring prometheus"
+  shell: "{{ item }}"
+  with_items:
+  - sudo mkdir /etc/prometheus
+  - sudo mkdir /var/lib/prometheus
+  - wget https://github.com/prometheus/prometheus/releases/download/v2.19.0/prometheus-2.19.0.linux-amd64.tar.gz
+  - tar xfz prometheus-*.tar.gz
+- name: "Setting up Prometheus"
+  command: "{{ item }} chdir=/root/prometheus-2.19.0.linux-amd64"
+  with_items:
+  - sudo cp ./prometheus /usr/local/bin/
+  - sudo cp ./promtool /usr/local/bin/
+  - sudo cp -r ./consoles /etc/prometheus
+  - sudo cp -r ./console_libraries /etc/prometheus
+- name: "Downloading Grafana"
+  shell: "{{ item }}"
+  with_items:
+  - rm -rf /root/prometheus-*
+  - wget https://dl.grafana.com/oss/release/grafana_7.0.3_amd64.deb
+  - sudo apt-get install -y adduser libfontconfig
+  - sudo dpkg -i grafana_7.0.3_amd64.deb
+ name: "transferring {{ node_alias }} services"
+ copy:
+  src: "{{ item.src }}"
+  dest: "{{ item.dest }}"
+  mode: "{{item.mode}}"
+ with_items:
+ - { src: 'prometheus.yml',dest: '/etc/prometheus', mode: '0755'}
+ - { src: 'prometheus.service',dest: '/etc/systemd/system', mode: '0755'}
+- name: "Install the iptables package"
+  package:
+   name: iptables
+   state: latest
+  become: yes
+- name: "Flush existing firewall rules"
+  iptables:
+   flush: true
+  become: yes
+- name: "Firewall rule - allow all loopback traffic"
+  iptables:
+   action: append
+   chain: INPUT
+   in_interface: lo
+   jump: ACCEPT
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow established connections"
+  iptables:
+   chain: INPUT
+   ctstate: ESTABLISHED,RELATED
+   jump: ACCEPT
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port ping traffic"
+  iptables:
+   chain: INPUT
+   jump: ACCEPT
+   protocol: icmp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port 22/SSH traffic"
+  iptables:
+   chain: INPUT
+   destination_port: 22
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port {{ grafana_server_port }} traffic"
+  iptables:
+   chain: INPUT
+   destination_port: "{{ grafana_server_port }}"
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port {{ prometheus_port_default }} traffic"
+  iptables:
+   chain: INPUT
+   destination_port: "{{ prometheus_port_default }}"
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port {{ ubuntu_login_ssh_port }} traffic"
+  iptables:
+   chain: INPUT
+   destination_port: "{{ ubuntu_login_ssh_port }}"
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Install netfilter-persistent && iptables-persistent packages"
+  package:
+   name: "{{item}}"
+   state: present
+  with_items:
+  - iptables-persistent
+  - netfilter-persistent
+  when: ansible_os_family == "Ubuntu"
+- name: "save iptables"
+  command: iptables-save
+- name: "Install the fail2ban package"
+  package:
+   name: fail2ban
+   state: latest
+- name: "Override some basic fail2ban configurations"
+  copy:
+   src: jail.local  
+   dest: /etc/fail2ban/jail.local
+   owner: root
+   group: root
+   mode: 0644
+- name: "Enable firewall"
+  ufw: state=enabled
+  notify: Restart ssh
+- name: "Change ssh port to user defined"
+  lineinfile: 
+   dest=/etc/ssh/sshd_config
+   regexp="^Port\s"
+   line="Port {{ ubuntu_login_ssh_port }}"
+   state=present
+  notify: Restart ssh
+- name: "Disallow root SSH access"
+  lineinfile: 
+   dest=/etc/ssh/sshd_config
+   regexp="^PermitRootLogin"
+   line="PermitRootLogin no"
+   state=present
+  notify: Restart ssh

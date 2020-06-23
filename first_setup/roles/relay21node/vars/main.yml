@@ -1,0 +1,9 @@
+node_alias: relay
+ubuntu_node_port: "{{ lookup('env','RELAY1_PORT') }}"
+prometheus_port_default: "{{ lookup('env','PROMETHEUS_NODE_PORT') }}"
+node_exporter_port: "{{ lookup('env','NODE_EXPORTER_PORT') }}"
+service_node_address: "{{ lookup('env','SERVICE_NODE_ADDR') }}"
+ubuntu_login_ssh_port: "{{ lookup('env','SSH_PORT') }}"
+cardano_tag_version: "{{ lookup('env','CARDANO_TAG_VERSION') }}"
+cardano_node_version: "{{ lookup('env','CARDANO_NODE_VERSION') }}"
+home_dir: "{{ lookup('env','HOME_DIR') }}"

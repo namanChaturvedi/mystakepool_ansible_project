@@ -1,0 +1,7 @@
+ubuntu_common_logwatch_email: "{{ lookup('env','USER_EMAIL') }}"
+ubuntu_common_deploy_user_name: "{{ lookup('env','USERNAME') }}"
+ubuntu_common_required_packages:
+- ufw
+- fail2ban
+- unattended-upgrades
+- logwatch

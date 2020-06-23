@@ -1,0 +1,135 @@
+- name: "create config folder"
+  shell: "{{ item }}"
+  with_items:
+  - "mkdir {{ home_dir }}/cardano-node/{{ node_alias }}_config"
+- name: "transferring {{ node_alias }} configs and services"
+  copy:
+   src: "{{ item.src }}"
+   dest: "{{ item.dest }}"
+   mode: "{{item.mode}}"
+  with_items:
+  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
+  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
+  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
+  - { src: 'cardano-node.environment',dest: '{{ home_dir }}/cardano-node', mode: '0755'}
+  - { src: 'bp_node_shelley.service',dest: '/etc/systemd/system', mode: '0755'}
+  - { src: 'node_exporter.service',dest: '/etc/systemd/system', mode: '0755'}
+- name: "Installing Node Exporter"
+  shell: "{{ item }}"
+  with_items:
+  - wget https://github.com/prometheus/node_exporter/releases/download/v0.16.0/node_exporter-0.16.0.linux-amd64.tar.gz
+  - tar xvf node_exporter-0.16.0.linux-amd64.tar.gz
+  - sudo cp node_exporter-0.16.0.linux-amd64/node_exporter /usr/local/bin
+  - rm -rf node_exporter-0.16.0.linux-amd64.tar.gz node_exporter-0.16.0.linux-amd64
+- name: "Install the iptables package"
+  package:
+   name: iptables
+   state: latest
+  become: yes
+- name: "Flush existing firewall rules"
+  iptables:
+   flush: true
+  become: yes
+- name: "Firewall rule - allow all loopback traffic"
+  iptables:
+   action: append
+   chain: INPUT
+   in_interface: lo
+   jump: ACCEPT
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow established connections"
+  iptables:
+   chain: INPUT
+   ctstate: ESTABLISHED,RELATED
+   jump: ACCEPT
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port ping traffic"
+  iptables:
+   chain: INPUT
+   jump: ACCEPT
+   protocol: icmp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port 22/SSH traffic"
+  iptables:
+   chain: INPUT
+   destination_port: 22
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port {{ ubuntu_node_port }} traffic"
+  iptables:
+   chain: INPUT
+   destination_port: "{{ ubuntu_node_port }}"
+   source: "{{ relay1_node_address }}"
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port {{ prometheus_port_default }} traffic"
+  iptables:
+   chain: INPUT
+   destination_port: "{{ prometheus_port_default }}"
+   source: "{{ service_node_address }}"
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port {{ node_exporter_port }} traffic"
+  iptables:
+   chain: INPUT
+   destination_port: "{{ node_exporter_port }}"
+   source: "{{ service_node_address }}"
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Firewall rule - allow port {{ ubuntu_login_ssh_port }} traffic"
+  iptables:
+   chain: INPUT
+   destination_port: "{{ ubuntu_login_ssh_port }}"
+   jump: ACCEPT
+   protocol: tcp
+  become: yes
+  notify: restart iptables
+- name: "Install netfilter-persistent && iptables-persistent packages"
+  package:
+   name: "{{item}}"
+   state: present
+  with_items:
+  - iptables-persistent
+  - netfilter-persistent
+  when: ansible_os_family == "Ubuntu"
+- name: "save iptables"
+  command: iptables-save
+- name: "Install the fail2ban package"
+  package:
+   name: fail2ban
+   state: latest
+- name: "Override some basic fail2ban configurations"
+  copy:
+   src: jail.local
+   dest: /etc/fail2ban/jail.local
+   owner: root
+   group: root
+   mode: 0644
+- name: "Enable firewall"
+  ufw: state=enabled
+  notify: Restart ssh
+- name: "Change ssh port to user defined"
+  lineinfile: 
+   dest=/etc/ssh/sshd_config
+   regexp="^Port\s"
+   line="Port {{ ubuntu_login_ssh_port }}"
+   state=present
+  notify: Restart ssh
+- name: "Disallow root SSH access"
+  lineinfile: 
+   dest=/etc/ssh/sshd_config
+   regexp="^PermitRootLogin"
+   line="PermitRootLogin no"
+   state=present
+  notify: Restart ssh
