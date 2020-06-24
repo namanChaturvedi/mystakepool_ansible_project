@@ -11,7 +11,7 @@
   - "mkdir {{ home_dir }}/git_key"
 - name: "copy git access keys"
   copy:
-   src: git_remote_access
+   src: git_remote_access_key
    dest: "{{ home_dir }}/git_key"
    mode: 0400
 - name: "download ghc"
