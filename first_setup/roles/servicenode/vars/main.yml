@@ -2,3 +2,28 @@ prometheus_port_default: "{{ lookup('env','PROMETHEUS_PORT') }}"
 grafana_server_port: "{{ lookup('env','GRAFANA_PORT') }}"
 ubuntu_login_ssh_port: "{{ lookup('env','SERVICE_SSH_PORT') }}"
 home_dir: "{{ lookup('env','HOME_DIR') }}"
+ufw_rules:
+ - rule: allow
+   interface: "{{ ansible_default_ipv4['interface'] }}"
+   to_port: "{{ ubuntu_login_ssh_port }}"
+   protocol: tcp
+ - rule: allow
+   interface: "{{ ansible_default_ipv4['interface'] }}"
+   to_port: "{{ prometheus_port_default }}"
+   protocol: tcp
+ - rule: allow
+   interface: "{{ ansible_default_ipv4['interface'] }}"
+   to_port: "{{ grafana_server_port }}"
+   protocol: tcp
+ - rule: allow
+   interface: "{{ ansible_default_ipv4['interface'] }}"
+   to_port: 5432
+   protocol: tcp
+ - rule: allow
+   interface: "{{ ansible_default_ipv4['interface'] }}"
+   to_port: 443
+   protocol: tcp
+ - rule: allow
+   interface: "{{ ansible_default_ipv4['interface'] }}"
+   to_port: 80
+   protocol: tcp

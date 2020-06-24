@@ -27,69 +27,40 @@
  with_items:
  - { src: 'prometheus.yml',dest: '/etc/prometheus', mode: '0755'}
  - { src: 'prometheus.service',dest: '/etc/systemd/system', mode: '0755'}
-- name: "Install the iptables package"
-  package:
-   name: iptables
-   state: latest
-  become: yes
-- name: "Flush existing firewall rules"
-  iptables:
-   flush: true
-  become: yes
-- name: "Firewall rule - allow all loopback traffic"
-  iptables:
-   action: append
-   chain: INPUT
-   in_interface: lo
-   jump: ACCEPT
-  become: yes
-  notify: restart iptables
-- name: "Firewall rule - allow established connections"
-  iptables:
-   chain: INPUT
-   ctstate: ESTABLISHED,RELATED
-   jump: ACCEPT
-  become: yes
-  notify: restart iptables
-- name: "Firewall rule - allow port ping traffic"
-  iptables:
-   chain: INPUT
-   jump: ACCEPT
-   protocol: icmp
-  become: yes
-  notify: restart iptables
-- name: "Firewall rule - allow port 22/SSH traffic"
-  iptables:
-   chain: INPUT
-   destination_port: 22
-   jump: ACCEPT
-   protocol: tcp
-  become: yes
-  notify: restart iptables
-- name: "Firewall rule - allow port {{ grafana_server_port }} traffic"
-  iptables:
-   chain: INPUT
-   destination_port: "{{ grafana_server_port }}"
-   jump: ACCEPT
-   protocol: tcp
-  become: yes
-  notify: restart iptables
-- name: "Firewall rule - allow port {{ prometheus_port_default }} traffic"
-  iptables:
-   chain: INPUT
-   destination_port: "{{ prometheus_port_default }}"
-   jump: ACCEPT
-   protocol: tcp
-  become: yes
-  notify: restart iptables
-- name: "Firewall rule - allow port {{ ubuntu_login_ssh_port }} traffic"
-  iptables:
-   chain: INPUT
-   destination_port: "{{ ubuntu_login_ssh_port }}"
-   jump: ACCEPT
-   protocol: tcp
-  become: yes
-  notify: restart iptables
+- name: "Enable ufw"
+  ufw: state=enabled policy=allow
+- name: "Disable default incoming"
+  ufw: direction=incoming policy=deny
+- name: "allow ssh in"
+  ufw: rule=limit name=OpenSSH
+- name: "configure | rules"
+  ufw:
+   rule: "{{ item.rule }}"
+   interface: "{{ item.interface | default('') }}"
+   direction: "{{ item.direction | default('in') }}"
+   from_ip: "{{ item.from_ip | default('any') }}"
+   to_ip: "{{ item.to_ip | default('any') }}"
+   from_port: "{{ item.from_port | default('') }}"
+   to_port: "{{ item.to_port | default('') }}"
+   protocol: "{{ item.protocol | default('any') }}"
+   route: "{{ item.route | default(omit) }}"
+   log: "{{ item.log | default(false) }}"
+   comment: "{{ item.comment | default(omit) }}"
+  with_items: "{{ ufw_rules }}"
+  notify: reload ufw
+- name: "Allow access from RFC1918 networks to this host"
+  ufw: rule=allow src="{{ item }}"
+  with_items:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+- name: "Enable Logging & restart ufw"
+  ufw: logging=on
+  notify: reload ufw
+- name: "View Ufw rules"
+  command: ufw status
+  register: out
+- debug: var=out.stdout_lines
 - name: "Install netfilter-persistent && iptables-persistent packages"
   package:
    name: "{{item}}"
