@@ -1,5 +1,4 @@
-- name: restart iptables
-  become: yes
-  service: name=ufw enabled=yes state=restarted
+- name: reload ufw
+  service: name=ufw state: restarted
 - name: Restart ssh
   service: name=ssh state=restarted
