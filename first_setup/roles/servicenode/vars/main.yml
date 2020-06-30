@@ -1,6 +1,12 @@
 prometheus_port_default: "{{ lookup('env','PROMETHEUS_PORT') }}"
+prometheus_nodes_port: "{{ lookup('env','PROMETHEUS_NODES_PORT') }}"
+node_exporter_port: "{{ lookup('env','NODE_EXPORTER_PORT') }}"
 grafana_server_port: "{{ lookup('env','GRAFANA_PORT') }}"
 ubuntu_login_ssh_port: "{{ lookup('env','SERVICE_SSH_PORT') }}"
+core_node_address: "{{ lookup('env','CORE_ADDR') }}"
+relay1_node_address: "{{ lookup('env','RELAY1_ADDR') }}"
+relay2_node_address: "{{ lookup('env','RELAY2_ADDR') }}"
+relay3_node_address: "{{ lookup('env','RELAY3_ADDR') }}"
 home_dir: "{{ lookup('env','HOME_DIR') }}"
 ufw_rules:
  - rule: allow

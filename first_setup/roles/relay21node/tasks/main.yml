@@ -1,19 +1,19 @@
 - name: "create config folder"
   shell: "{{ item }}"
   with_items:
-  - "mkdir {{ home_dir }}/cardano-node/{{ node_alias }}_config"
+  - "mkdir {{ home_dir }}/cardano-node/config_files"
 - name: "transferring {{ node_alias }} configs and services"
-  copy:
+  template:
    src: "{{ item.src }}"
    dest: "{{ item.dest }}"
    mode: "{{item.mode}}"
   with_items:
-  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
-  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
-  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
-  - { src: 'cardano-node.environment',dest: '{{ home_dir }}/cardano-node', mode: '0755'}
-  - { src: 'relay_node_shelley.service',dest: '/etc/systemd/system', mode: '0755'}
-  - { src: 'node_exporter.service',dest: '/etc/systemd/system', mode: '0755'}
+  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-config.json', mode: '0755'}
+  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-genesis.json', mode: '0755'}
+  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-topology.json', mode: '0755'}
+  - { src: 'cardano-node.environment',dest: '{{ home_dir }}/cardano-node/cardano-node.environment', mode: '0755'}
+  - { src: 'relay_node_shelley.service',dest: '/etc/systemd/system/relay_node.service', mode: '0755'}
+  - { src: 'node_exporter.service',dest: '/etc/systemd/system/node_exporter.service', mode: '0755'}
 - name: "Installing Node Exporter"
   shell: "{{ item }}"
   with_items:

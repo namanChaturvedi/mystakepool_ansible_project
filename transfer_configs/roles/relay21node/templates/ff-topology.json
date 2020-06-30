@@ -1,0 +1,34 @@
+{
+"Producers": [
+{
+"addr": "{{ core_node_address }}",
+"port": {{ core_port }},
+"valency": 1
+},
+{
+"addr": "{{ relay1_node_address }}",
+"port": {{ node_port }},
+"valency": 1
+},
+{
+"addr": "{{ relay2_node_address }}",
+"port": {{ node_port }},
+"valency": 1
+},
+{
+"addr": "{{ relay3_node_address }}",
+"port": {{ node_port }},
+"valency": 1
+},
+{
+"addr": "relays-new.shelley-testnet.dev.cardano.org",
+"port": 3001,
+"valency": 2
+},
+{
+"addr": "relay.anonaf.com",
+"port": 3333,
+"valency": 1
+}
+]
+}

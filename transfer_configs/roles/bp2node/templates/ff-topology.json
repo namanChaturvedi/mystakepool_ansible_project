@@ -1,0 +1,19 @@
+{
+"Producers": [
+{
+"addr": "{{ relay1_node_address }}",
+"port": {{ relay_port }},
+"valency": 1
+},
+{
+"addr": "{{ relay2_node_address }}",
+"port": {{ relay_port }},
+"valency": 1
+},
+{
+"addr": "{{ relay3_node_address }}",
+"port": {{ relay_port }},
+"valency": 1
+}
+]
+}
