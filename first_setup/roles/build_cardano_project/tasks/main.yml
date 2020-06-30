@@ -1,14 +1,57 @@
 - name: "setting up env for Cardano Build"
+  become: true
   shell: "{{ item }}"
   with_items:
   - "cd {{ home_dir }}"
-  - apt-get install build-essential pkg-config libffi-dev libgmp-dev libssl-dev libtinfo-dev libsystemd-dev zlib1g-dev make g++ tmux git jq wget libncursesw5 -y
+  - apt-get -y install python3-q-text-as-data
+  - apt-get -y install python-q-text-as-data
+  - apt-get install build-essential -y
+  - apt-get install pkg-config -y
+  - apt-get install libffi-dev libgmp-dev libssl-dev libtinfo-dev -y
+  - apt-get install libsystemd-dev zlib1g-dev make -y
+  - apt-get install g++ tmux git jq wget libncursesw5 -y
+  - apt -y install libtool autoconf
+#  - apt-get -y install python3 build-essential pkg-config libffi-dev libgmp-dev libssl-dev libtinfo-dev systemd libsystemd-dev libsodium-dev zlib1g-dev yarn make g++ tmux git jq wget libncursesw5 gnupg aptitude libtool autoconf
   - wget https://downloads.haskell.org/~cabal/cabal-install-3.2.0.0/cabal-install-3.2.0.0-x86_64-unknown-linux.tar.xz
   - tar -xf cabal-install-3.2.0.0-x86_64-unknown-linux.tar.xz
   - rm cabal-install-3.2.0.0-x86_64-unknown-linux.tar.xz cabal.sig
   - mv cabal ~/.local/bin/
   - ~/.local/bin/cabal update
   - "mkdir {{ home_dir }}/git_key"
+- name: "libsodium"
+  git:
+   repo: https://github.com/input-output-hk/libsodium
+   version: 66f017f1
+   dest: "{{ home_dir }}/libsodium"
+#- name: run autogen.sh
+#  shell: ./autogen.sh
+#  register: autogen_installed
+#  args:
+#   chdir: "{{ home_dir }}/libsodium"
+#   creates: "{{ home_dir }}/libsodium/configure"
+#- name: run configure
+#  shell: ./configure --prefix=/usr --mandir=/usr/share/man
+#  args:
+#   chdir: "{{ home_dir }}/libsodium"
+#   creates: "{{ home_dir }}/libsodium/Makefile"
+#- name: make and install
+#  shell: make && make install
+#  args:
+#   chdir: "{{ home_dir }}/libsodium"
+#   when: autogen_installed.rc > 0
+- name: "installing libsodium dependencies"
+  command: "{{ item }} chdir={{ home_dir }}/libsodium"
+  with_items:
+  - ./autogen.sh -y
+  - ./configure
+  - make
+  - sudo make install
+- name: "add LD_LIBRARY_PATH to bashrc"
+  lineinfile:
+   path: ~/.bashrc
+   line: "{{ item }}"
+  with_items:
+  - export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 - name: "copy git access keys"
   copy:
    src: git_remote_access_key

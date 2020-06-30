@@ -3,23 +3,34 @@
   with_items:
   - "mkdir {{ home_dir }}/cardano-node/config_files"
   - "mkdir {{ home_dir }}/cardano-node/cntools"
+- name: "downloading latest cntools"
+  command: "{{ item }} chdir={{ home_dir }}/cardano-node/scripts"
+  - wget -O cntools.sh https://raw.githubusercontent.com/cardano-community/guild-operators/master/scripts/cnode-helper-scripts/cntools.sh
+  - wget -O cntools.library https://raw.githubusercontent.com/cardano-community/guild-operators/master/scripts/cnode-helper-scripts/cntools.library
+  - wget -O cntoolsBlockCollector.sh https://raw.githubusercontent.com/cardano-community/guild-operators/master/scripts/cnode-helper-scripts/cntoolsBlockCollector.sh
+  - chmod 750 cntools.sh cntoolsBlockCollector.sh
 - name: "transferring {{ node_alias }} configs and services"
   template:
    src: "{{ item.src }}"
    dest: "{{ item.dest }}"
    mode: "{{item.mode}}"
   with_items:
-  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-config.json', mode: '0755'}
-  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-genesis.json', mode: '0755'}
-  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-topology.json', mode: '0755'}
+  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/config_files/config.json', mode: '0755'}
+  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/config_files/genesis.json', mode: '0755'}
+  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/config_files/topology.json', mode: '0755'}
   - { src: 'cardano-node.environment',dest: '{{ home_dir }}/cardano-node/cardano-node.environment', mode: '0755'}
-  - { src: 'cntools.config',dest: '{{ home_dir }}/cardano-node/cntools/cntools.config', mode: '0640'}
-  - { src: 'cntools.library',dest: '{{ home_dir }}/cardano-node/cntools/cntools.library', mode: '0640'}
-  - { src: 'cntools.sh',dest: '{{ home_dir }}/cardano-node/cntools/cntools.sh', mode: '0750'}
-  - { src: 'env',dest: '{{ home_dir }}/cardano-node/cntools/env', mode: '0640'}
+  - { src: 'cntools.config',dest: '{{ home_dir }}/cardano-node/scripts/cntools.config', mode: '0640'}
+  - { src: 'env',dest: '{{ home_dir }}/cardano-node/scripts/env', mode: '0640'}
   - { src: 'bp_node_shelley.service',dest: '/etc/systemd/system/bp_node.service', mode: '0755'}
   - { src: 'cntools-blockcollector.service',dest: '/etc/systemd/system/bp_node.service', mode: '0755'}
   - { src: 'node_exporter.service',dest: '/etc/systemd/system/node_exporter.service', mode: '0755'}
+- name: "add launch alias in bashrc"
+  lineinfile:
+   path: ~/.bashrc
+   line: "{{ item }}"
+  with_items:
+  - "alias bplaunch='cardano-node run --topology config_files/topology.json --database-path config_files/db --socket-path config_files/db/node.socket --host-addr {{ core_node_address }} --port 7661 --config config_files/config.json --shelley-kes-key priv/pool/BFSA/BFSA1_hot.skey --shelley-vrf-key priv/pool/BFSA/BFSA1_vrf.skey --shelley-operational-certificate priv/pool/BFSA/BFSA1_op.cert'"
+  - "alias bplaunch_1='cardano-node run --topology config_files/topology.json --database-path config_files/db --socket-path config_files/db/node.socket --host-addr {{ core_node_address }} --port 7661 --config config_files/config.json'"
 - name: "Installing Node Exporter"
   shell: "{{ item }}"
   with_items:
@@ -59,7 +70,7 @@
   loop:
   - "{{ relay1_node_address }}"
   - "{{ relay2_node_address }}"
-  - "{{ relay3_node_address }}"
+#  - "{{ relay3_node_address }}"
   notify: reload ufw
 - name: "Enable Logging & restart ufw"
   ufw: logging=on

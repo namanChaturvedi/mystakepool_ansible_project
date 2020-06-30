@@ -8,12 +8,18 @@
    dest: "{{ item.dest }}"
    mode: "{{item.mode}}"
   with_items:
-  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-config.json', mode: '0755'}
-  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-genesis.json', mode: '0755'}
-  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-topology.json', mode: '0755'}
+  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/config_files/config.json', mode: '0755'}
+  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/config_files/genesis.json', mode: '0755'}
+  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/config_files/topology.json', mode: '0755'}
   - { src: 'cardano-node.environment',dest: '{{ home_dir }}/cardano-node/cardano-node.environment', mode: '0755'}
   - { src: 'relay_node_shelley.service',dest: '/etc/systemd/system/relay_node.service', mode: '0755'}
   - { src: 'node_exporter.service',dest: '/etc/systemd/system/node_exporter.service', mode: '0755'}
+- name: "add launch alias in bashrc"
+  lineinfile:
+   path: ~/.bashrc
+   line: "{{ item }}"
+  with_items:
+  - alias relaylaunch='cardano-node run --topology config_files/topology.json --database-path config_files/db --socket-path config_files/db/node.socket --host-addr 0.0.0.0 --port 7881 --config config_files/config.json'
 - name: "Installing Node Exporter"
   shell: "{{ item }}"
   with_items:
