@@ -1,6 +1,11 @@
 node_alias: block-producer
+pool_name: "{{ lookup('env','POOL_ALIAS') }}"
 node_port: "{{ lookup('env','CORE_PORT') }}"
+relay_port: "{{ lookup('env','RELAY1_PORT') }}"
+core_node_address: "{{ lookup('env','CORE_ADDR') }}"
 relay1_node_address: "{{ lookup('env','RELAY1_ADDR') }}"
+relay2_node_address: "{{ lookup('env','RELAY2_ADDR') }}"
+relay3_node_address: "{{ lookup('env','RELAY3_ADDR') }}"
 service_node_address: "{{ lookup('env','SERVICE_NODE_ADDR') }}"
 prometheus_port_default: "{{ lookup('env','PROMETHEUS_NODES_PORT') }}"
 ubuntu_login_ssh_port: "{{ lookup('env','SSH_PORT') }}"
@@ -12,11 +17,6 @@ ufw_rules:
  - rule: allow
    interface: "{{ ansible_default_ipv4['interface'] }}"
    to_port: "{{ ubuntu_login_ssh_port }}"
-   protocol: tcp
- - rule: allow
-   interface: "{{ ansible_default_ipv4['interface'] }}"
-   to_port: "{{ node_port }}"
-   from_ip: "{{ relay1_node_address }}"
    protocol: tcp
  - rule: allow
    interface: "{{ ansible_default_ipv4['interface'] }}"

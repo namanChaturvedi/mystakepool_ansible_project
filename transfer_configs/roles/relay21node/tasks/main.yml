@@ -6,12 +6,11 @@
   - git fetch --all --tags
   - "git checkout tags/{{ cardano_tag_version }}"
 - name: "transferring {{ node_alias }} configs and services"
-  become: true
-  copy:
+  template:
    src: "{{ item.src }}"
    dest: "{{ item.dest }}"
    mode: "{{item.mode}}"
   with_items:
-  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
-  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
-  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/{{ node_alias }}_config', mode: '0755'}
+  - { src: 'ff-config.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-config.json', mode: '0755'}
+  - { src: 'ff-genesis.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-genesis.json', mode: '0755'}
+  - { src: 'ff-topology.json',dest: '{{ home_dir }}/cardano-node/config_files/ff-topology.json', mode: '0755'}
